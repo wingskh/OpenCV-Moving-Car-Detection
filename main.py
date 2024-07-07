@@ -1,10 +1,36 @@
 import cv2
-import matplotlib.pyplot as plt
+import os
 
 MIN_CAR_WIDTH = MIN_CAR_HEIGHT = 28
 MIN_CAR_AREA = 5000
 LINE_OFFSET = 10
 FPS_DURATION = 2
+
+# Check if the input bbox is overlapped more than 50% with any bbox in the previous frame 
+def is_overlapped(bbox_list, input_bbox):
+    input_area = (input_bbox.right_x - input_bbox.left_x) * (input_bbox.bottom_y - input_bbox.top_y)
+    
+    for box in bbox_list:
+        x_left = max(box.left_x, input_bbox.left_x)
+        y_top = max(box.top_y, input_bbox.top_y)
+        x_right = min(box.right_x, input_bbox.right_x)
+        y_bottom = min(box.bottom_y, input_bbox.bottom_y)
+        
+        if x_right > x_left and y_bottom > y_top:
+            overlap_area = (x_right - x_left) * (y_bottom - y_top)
+            if overlap_area >= 0.5 * input_area:
+                return True
+    return False
+
+def clear_console():
+    if os.name == 'nt':  # for Windows
+        os.system('cls')
+    else:  # for Linux/OS X
+        os.system('clear')
+
+def show_processing_percentage(percentage):
+    clear_console()
+    print(f'Total Frames: {min(percentage, 100):.2f}%')
 
 class BoundingBox:
     def __init__(self, x, y, w, h):
@@ -29,22 +55,6 @@ class BoundingBox:
     
     def corners_position(self):
         return (self.left_x, self.top_y), (self.right_x, self.bottom_y)
-
-# Check if the input bbox is overlapped more than 50% with any bbox in the previous frame 
-def is_overlapped(bbox_list, input_bbox):
-    input_area = (input_bbox.right_x - input_bbox.left_x) * (input_bbox.bottom_y - input_bbox.top_y)
-    
-    for box in bbox_list:
-        x_left = max(box.left_x, input_bbox.left_x)
-        y_top = max(box.top_y, input_bbox.top_y)
-        x_right = min(box.right_x, input_bbox.right_x)
-        y_bottom = min(box.bottom_y, input_bbox.bottom_y)
-        
-        if x_right > x_left and y_bottom > y_top:
-            overlap_area = (x_right - x_left) * (y_bottom - y_top)
-            if overlap_area >= 0.5 * input_area:
-                return True
-    return False
 
 class BBoxMap:
     def __init__(self):
@@ -87,7 +97,7 @@ def start_count():
             break
         if processed_frame_count % FPS_DURATION != 0:
             continue
-        print(f'Total Frames: {min(processed_frame_count/total_frames*100, 100):.2f}%')
+        show_processing_percentage(processed_frame_count/total_frames*100)
 
         cv2.line(frame, line_position[0], line_position[1], (255,127,0), 3) 
 
@@ -141,8 +151,6 @@ def start_count():
         combined_frame = cv2.hconcat([frame, cv2.merge([thresh, thresh, thresh])])
         combined_out.write(combined_frame)
         out.write(frame)
-        if processed_frame_count > 400:
-            break
 
     cap.release()
     out.release()
@@ -152,4 +160,5 @@ def start_count():
 
 if __name__ == '__main__':
     total_car = start_count()
+    clear_console()
     print(f'Total Moving Vehicles Detected: {total_car}')
