@@ -118,4 +118,4 @@ def start_count():
 
 if __name__ == '__main__':
     total_car = start_count()
-    print(f'Total Cars Detected: {total_car}')
+    print(f'Total Moving Vehicles Detected: {total_car}')
