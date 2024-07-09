@@ -34,7 +34,6 @@ class VehicleDetectorByMovement(VehicleDetector):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (15, 15), 0)
 
-        contour_img = np.zeros((self.height, self.width), np.uint8)
         frame_diff = cv2.absdiff(self.prev_frame_gray, gray)
         _, thresh = cv2.threshold(frame_diff, 30, 255, cv2.THRESH_BINARY)
         thresh = cv2.dilate(thresh, None, iterations=2)
@@ -46,9 +45,5 @@ class VehicleDetectorByMovement(VehicleDetector):
 
         self.prev_frame_gray = gray
         contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contour_img = cv2.drawContours(contour_img, contours, -1, (255, 255, 255), 1)
 
-        cv2.line(frame, self.line_position[0], self.line_position[1], (255,127,0), 3) 
-        combined_frame = cv2.hconcat([frame, cv2.merge([contour_img, contour_img, contour_img])])
-        self.video_writer.write(combined_frame)
         return contours

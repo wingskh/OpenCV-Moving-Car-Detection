@@ -42,9 +42,5 @@ class VehicleDetectorByBackground(VehicleDetector):
         
         dilated_mask = cv2.dilate(foreground_mask, None, iterations=2)
         contours, _ = cv2.findContours(dilated_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contour_img = cv2.drawContours(np.zeros_like(gray_frame), contours, -1, (255, 255, 255), 1)
-                                       
-        cv2.line(frame, self.line_position[0], self.line_position[1], (255,127,0), 3)
-        combined_frame = cv2.hconcat([frame, cv2.merge([contour_img, contour_img, contour_img])])
-        self.video_writer.write(combined_frame)
+
         return contours
