@@ -6,6 +6,7 @@ class BoundingBox:
         self.bottom_y = y + h
         self.center_x = x + int(w / 2)
         self.center_y = y + int(h / 2)
+        self.area = self.get_area()
     
     def get_center(self):
         return self.center_x, self.center_y

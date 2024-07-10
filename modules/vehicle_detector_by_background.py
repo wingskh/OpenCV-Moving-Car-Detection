@@ -40,7 +40,10 @@ class VehicleDetectorByBackground(VehicleDetector):
         foreground_mask = cv2.absdiff(blurred_background, blurred_frame)
         _, foreground_mask = cv2.threshold(foreground_mask, 25, 255, cv2.THRESH_BINARY)
         
-        dilated_mask = cv2.dilate(foreground_mask, None, iterations=2)
-        contours, _ = cv2.findContours(dilated_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        kernel = np.ones((5, 5), np.uint8)
+        dilated = cv2.dilate(foreground_mask, kernel, iterations=2)
+        eroded = cv2.erode(dilated, kernel, iterations=1)
+        canny = cv2.Canny(eroded, 150, 200)
+        contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         return contours

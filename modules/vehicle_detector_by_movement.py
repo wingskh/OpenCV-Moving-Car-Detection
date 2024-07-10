@@ -13,7 +13,9 @@ class VehicleDetectorByMovement(VehicleDetector):
     def __init__(self, frame, fps=30, fourcc=cv2.VideoWriter_fourcc(*'mp4v')):
         super().__init__(frame, fps, fourcc, OUTPUT_FILE_NAME)
         self.detection_type = DETECTION_TYPE
-        self.prev_frame_gray = cv2.GaussianBlur(cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
+        # Use only the saturation channel
+        s_channel = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)[:, :, 1]
+        self.prev_blurred = cv2.GaussianBlur(s_channel, (21, 21), 0)
         
     def extract_background(self):
         cap = cv2.VideoCapture(self.video_path)
@@ -31,19 +33,18 @@ class VehicleDetectorByMovement(VehicleDetector):
         return background_img
     
     def get_contours(self, frame):
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (15, 15), 0)
+        s_channel = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)[:, :, 1]
+        blurred = cv2.GaussianBlur(s_channel, (21, 21), 0)
 
-        frame_diff = cv2.absdiff(self.prev_frame_gray, gray)
-        _, thresh = cv2.threshold(frame_diff, 30, 255, cv2.THRESH_BINARY)
-        thresh = cv2.dilate(thresh, None, iterations=2)
+        frame_diff = cv2.absdiff(self.prev_blurred, blurred)
+        _, thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)
 
         # Use dilated then eroded to close small holes in the foreground
-        kernel = np.ones((5, 5),np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
         dilated = cv2.dilate(thresh, kernel, iterations=2)
         eroded = cv2.erode(dilated, kernel, iterations=1)
-
-        self.prev_frame_gray = gray
-        contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        canny = cv2.Canny(eroded, 150, 200)
+        contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        self.prev_blurred = blurred
 
         return contours

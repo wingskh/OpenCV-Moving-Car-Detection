@@ -4,13 +4,12 @@ import cv2
 import numpy as np
 from dotenv import load_dotenv
 from helpers.bbox_helper import is_overlapped
-from modules.bbox_map import BBoxMap
 from modules.bounding_box import BoundingBox
 load_dotenv()
 
 MIN_CAR_WIDTH = MIN_CAR_HEIGHT = 35
 MIN_CAR_AREA = 2500
-LINE_OFFSET = 15
+LINE_OFFSET = 20
 FPS_DURATION = 2
 
 class VehicleDetector(ABC):
@@ -24,7 +23,6 @@ class VehicleDetector(ABC):
         self.min_car_width = MIN_CAR_WIDTH
         self.min_car_height = MIN_CAR_HEIGHT
         self.min_car_area = MIN_CAR_AREA
-        self.detected_bbox = BBoxMap()
         self.frame = frame
         self.height, self.width, _ = self.frame.shape
         self.line_y = int(self.height * 2 / 3)
@@ -49,7 +47,6 @@ class VehicleDetector(ABC):
 
         center_list = []
         cur_detected_bbox = []
-        detected_bbox = BBoxMap()
 
         cv2.line(frame, self.line_position[0], self.line_position[1], (255,127,0), 3) 
         for (x, y, w, h) in boxes:
@@ -59,23 +56,19 @@ class VehicleDetector(ABC):
             if contour_bbox.get_area() < MIN_CAR_AREA or w < MIN_CAR_WIDTH or h < MIN_CAR_HEIGHT:
                 continue
 
-            detected_bbox.add_bbox(contour_bbox)
             cv2.rectangle(frame, contour_bbox.get_left_top(), contour_bbox.get_right_bottom(), (0, 255, 0), 2)
             cv2.circle(frame, contour_bbox.get_center(), 4, (0, 0,255), -1)
-
-            detected_bbox_key_list = list(detected_bbox.bbox_map.keys())
-            for bbox_index in detected_bbox_key_list:
-                bbox = detected_bbox.bbox_map[bbox_index]
-                center_y = bbox.get_center()[1]
-                if center_y < (self.line_y + LINE_OFFSET) and center_y > (self.line_y - LINE_OFFSET) and not is_overlapped(self.prev_detected_bbox, bbox):
+            center_y = contour_bbox.get_center()[1]
+            if center_y < (self.line_y + LINE_OFFSET) and center_y > (self.line_y - LINE_OFFSET):
+                if not is_overlapped(self.prev_detected_bbox, contour_bbox):
                     self.total_car += 1
                     cv2.rectangle(frame, contour_bbox.get_left_top(), contour_bbox.get_right_bottom(), (0, 0, 255), 2)
                     cv2.circle(frame, contour_bbox.get_center(), 4, (0, 0, 255), -1)
                     cv2.line(frame, self.line_position[0], self.line_position[1], (0, 127, 255), 3) 
-                    cv2.circle(frame, contour_bbox.get_center(), 4, (0, 255, 0), -1) 
-                    detected_bbox.remove(bbox_index)
-                    cur_detected_bbox.append(bbox)
+                    cv2.circle(frame, contour_bbox.get_center(), 4, (0, 255, 0), -1)
                     center_list.append(contour_bbox.get_center())
+                
+                cur_detected_bbox.append(contour_bbox)
 
         self.prev_detected_bbox = cur_detected_bbox
 
